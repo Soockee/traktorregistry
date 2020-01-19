@@ -13,15 +13,15 @@ namespace TraktorRegisty
     class Server
     {
         private static ConcurrentBag<ClientHandler> clients = new ConcurrentBag<ClientHandler>();
-        private static string ip = "127.0.0.1";
+        //private static string ip = "127.0.0.1";
         private static int port = 8080;
         private static bool running = true;
         public static void Main()
         {
-            var server = new TcpListener(IPAddress.Parse(ip), port);
+            var server = new TcpListener(System.Net.IPAddress.Any, port);
 
             server.Start();
-            Console.WriteLine("Server has started on {0}:{1}, Waiting for a connection...", ip, port);
+            Console.WriteLine("Server has started on {0}:{1}, Waiting for a connection...", System.Net.IPAddress.Any, port);
 
 
             // enter to an infinite cycle to be able to handle every change in stream
@@ -35,9 +35,18 @@ namespace TraktorRegisty
         }
         public static void Broadcast(string message) 
         { 
-            foreach(var clients in clients)
+            foreach(var client in clients)
             {
-                clients.sendMessage(message);
+                client.sendMessage(message);
+            }
+        }
+        public static void DistributeMessage(string message, ClientHandler self)
+        {
+            foreach (var client in clients)
+            {
+                if (!client.Equals(self)){
+                    client.sendMessage(message);
+                }
             }
         }
         public static void RemoveClient(ClientHandler client)
@@ -81,8 +90,6 @@ namespace TraktorRegisty
                     int opcode = bytes[0] & 0b00001111, // expecting 1 - text message
                         msglen = bytes[1] - 128, // & 0111 1111
                         offset = 2;
-                    Console.WriteLine("OPCode:" + opcode);
-
                     if (opcode == 1) 
                     {
                         Console.WriteLine("Recieving Text message from Client");
@@ -100,7 +107,7 @@ namespace TraktorRegisty
                             decoded[i] = (byte)(bytes[offset + i] ^ masks[i % 4]);
 
                         string text = Encoding.UTF8.GetString(decoded);
-                        Console.WriteLine("{0}", text);
+                        Console.WriteLine("Client-Closing-Message: {0}", text);
                         break;
                     }
                     if (msglen == 126)
@@ -127,8 +134,8 @@ namespace TraktorRegisty
                             decoded[i] = (byte)(bytes[offset + i] ^ masks[i % 4]);
 
                         string text = Encoding.UTF8.GetString(decoded);
-                        Console.WriteLine("{0}", text);
-                        Server.Broadcast(text);
+                        Console.WriteLine("Client-Message: {0}", text);
+                        Server.DistributeMessage(text,this);
                     }
                     else Console.WriteLine("mask bit not set");
                 }
