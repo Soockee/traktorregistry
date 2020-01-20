@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Net;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace TraktorRegisty
 {
@@ -18,6 +15,16 @@ namespace TraktorRegisty
         private static bool running = true;
         public static void Main()
         {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                Console.WriteLine("This Registry runs on Unix with Enviromental Settings");
+                Server.port = int.Parse(Environment.GetEnvironmentVariable("REGISTRY_PORT"));
+            }
+            else
+            {
+                Console.WriteLine("This Registry runs on NON-Unix with Default Settings");
+                Server.port = 8080;
+            }
             var server = new TcpListener(System.Net.IPAddress.Any, port);
 
             server.Start();
@@ -33,9 +40,9 @@ namespace TraktorRegisty
                 clients.Add(clientHandler);
             }
         }
-        public static void Broadcast(string message) 
-        { 
-            foreach(var client in clients)
+        public static void Broadcast(string message)
+        {
+            foreach (var client in clients)
             {
                 client.sendMessage(message);
             }
@@ -44,7 +51,8 @@ namespace TraktorRegisty
         {
             foreach (var client in clients)
             {
-                if (!client.Equals(self)){
+                if (!client.Equals(self))
+                {
                     client.sendMessage(message);
                 }
             }
@@ -77,10 +85,10 @@ namespace TraktorRegisty
                 stream.Read(bytes, 0, client.Available);
                 string s = Encoding.UTF8.GetString(bytes);
 
-                
+
                 if (Regex.IsMatch(s, "^GET", RegexOptions.IgnoreCase))
                 {
-                    HandShake(s);  
+                    HandShake(s);
                 }
                 else
                 {
@@ -90,7 +98,7 @@ namespace TraktorRegisty
                     int opcode = bytes[0] & 0b00001111, // expecting 1 - text message
                         msglen = bytes[1] - 128, // & 0111 1111
                         offset = 2;
-                    if (opcode == 1) 
+                    if (opcode == 1)
                     {
                         Console.WriteLine("Recieving Text message from Client");
 
@@ -135,13 +143,13 @@ namespace TraktorRegisty
 
                         string text = Encoding.UTF8.GetString(decoded);
                         Console.WriteLine("Client-Message: {0}", text);
-                        Server.DistributeMessage(text,this);
+                        Server.DistributeMessage(text, this);
                     }
                     else Console.WriteLine("mask bit not set");
                 }
             }
         }
-        public void sendMessage(byte[] message) 
+        public void sendMessage(byte[] message)
         {
             stream.Write(message, 0, message.Length);
         }
@@ -150,7 +158,7 @@ namespace TraktorRegisty
             byte[] codedMessage = Encoding.UTF8.GetBytes(message);
             sendMessage(BuildMessage(codedMessage));
         }
-        public byte[] BuildMessage(byte[] message) 
+        public byte[] BuildMessage(byte[] message)
         {
             /* fin + rsv1 + rsv2 + rsv3 + opcode = 1 Byte
              * mask + payload_len = 1 byte
@@ -159,10 +167,10 @@ namespace TraktorRegisty
             byte[] build = new byte[2 + message.Length];
             byte[] payload_len = BitConverter.GetBytes(message.Length);
             build[0] = 0b10000001;
-            build[1] = (byte) (message.Length & 0b01111111); //if Message exceeds firstpayload -> unlucky
-            for(int i = 0 ; i < message.Length ; ++i)
+            build[1] = (byte)(message.Length & 0b01111111); //if Message exceeds firstpayload -> unlucky
+            for (int i = 0; i < message.Length; ++i)
             {
-                build[i+2] = message[i];
+                build[i + 2] = message[i];
             }
             return build;
         }
