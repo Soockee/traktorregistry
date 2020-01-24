@@ -167,8 +167,8 @@ namespace TraktorRegisty
             byte[] build = new byte[2 + message.Length];
             byte[] payload_len = BitConverter.GetBytes(message.Length);
             build[0] = 0b10000001;
-            build[1] = (byte)(message.Length & 0b01111111); //if Message exceeds firstpayload -> unlucky
-            for (int i = 0; i < message.Length; ++i)
+            build[1] = payload_len.Length>1?payload_len[0]:throw new ArgumentException("playload length to big"); //if Message exceeds firstpayload -> unlucky
+            for (int i = 0; i < build[1] ; ++i)
             {
                 build[i + 2] = message[i];
             }
