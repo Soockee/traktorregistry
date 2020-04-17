@@ -176,11 +176,13 @@ namespace TraktorRegisty
         }
         public void RespondeTocloseWebsocket()
         {
-            byte[] closeFrame = new byte[4];
-            closeFrame[0] = 0b1000; // [Fin|RSV1|RSV2|RSV3]
-            closeFrame[1] = 0b1000; // [OPCode|OPCode|OPCode|OPCode]
-            closeFrame[2] = 0b0000; // [Mask|Payload|Payload|Payload]
-            closeFrame[3] = 0b0000; // [Payload|Payload|Payload|Payload]
+            byte[] closeFrame = new byte[2];
+        //    closeFrame[0] = 0b1000; // [Fin|RSV1|RSV2|RSV3]
+        //    closeFrame[1] = 0b1000; // [OPCode|OPCode|OPCode|OPCode]
+        //    closeFrame[2] = 0b0000; // [Mask|Payload|Payload|Payload]
+        //    closeFrame[3] = 0b0000; // [Payload|Payload|Payload|Payload]
+            closeFrame[0] = 0b10001000;
+            closeFrame[1] = 0b00000000;
             stream.Write(closeFrame);
             stream.Close();
             client.Close();
